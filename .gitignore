@@ -27,3 +27,7 @@ erl_crash.dump
 elm-stuff
 # elm-repl generated files
 repl-temp-*
+
+*.swp
+web/elm/elm.js
+web/static/js/main.js
