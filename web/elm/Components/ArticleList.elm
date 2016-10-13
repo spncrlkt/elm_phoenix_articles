@@ -3,6 +3,11 @@ module Components.ArticleList exposing (..)
 import Html exposing (Html, text, ul, li, div, h2, button)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Http
+import Task
+import Json.Decode as Json exposing ((:=))
+
+
 import List
 import Article
 
@@ -37,10 +42,16 @@ articles =
   }
 
 -- UPDATE
-
 type Msg
   = Noop
   | Fetch
+  | FetchSucceed (List Article.Model)
+  | FetchFail Http.Error
+  | RouteToNewPage SubPage
+
+type SubPage
+  = ListView
+  | ShowView Article.Model
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -49,18 +60,48 @@ update msg model =
       (model, Cmd.none)
 
     Fetch ->
-      (articles, Cmd.none)
+      (articles, fetchArticles)
+
+    FetchSucceed articleList ->
+      (Model articleList, Cmd.none)
+
+    FetchFail error ->
+      case error of
+        Http.UnexpectedPayload errorMsg ->
+          Debug.log errorMsg
+          (model, Cmd.none)
+        _ ->
+          Debug.log "Other Error"
+          (model, Cmd.none)
+
+    RouteToNewPage _ ->
+      (model, Cmd.none)
+
+-- HTTP
+fetchArticles : Cmd Msg
+fetchArticles = 
+  let
+    url = "/api/articles"
+  in
+    Task.perform FetchFail FetchSucceed (Http.get decodeArticleFetch url)
+
+decodeArticleFetch : Json.Decoder (List Article.Model)
+decodeArticleFetch =
+  Json.at ["data"] decodeArticleList
+
+decodeArticleList : Json.Decoder (List Article.Model)
+decodeArticleList =
+  Json.list decodeArticleData
+
+decodeArticleData : Json.Decoder Article.Model
+decodeArticleData =
+  Json.object4 Article.Model
+    ("title" := Json.string)
+    ("url" := Json.string)
+    ("posted_by" := Json.string)
+    ("posted_on" := Json.string)
 
 -- VIEW
-
-viewArticle : Article.Model -> Html a
-viewArticle article =
-  li [] [ Article.view article ]
-
-viewArticles : Model -> List (Html a)
-viewArticles model =
-  List.map viewArticle model.articles
-
 
 view : Model -> Html Msg
 view model =
@@ -69,3 +110,19 @@ view model =
     , button [ onClick Fetch, class "btn btn-primary" ] [ text "Fetch Articles" ]
     , ul [] (viewArticles model)
     ]
+
+viewArticles : Model -> List (Html a)
+viewArticles model =
+  List.map viewArticle model.articles
+
+viewArticle : Article.Model -> Html a
+viewArticle article =
+  li [] [ Article.view article, articleLink article ]
+
+articleLink : Article.Model -> Html Msg
+articleLink article =
+  a
+    [ href ("#article/" ++ article.title ++ "/show")
+    , onClick (RouteToNewPage (ShowView article))
+    ]
+    [ text " (Show) "]
