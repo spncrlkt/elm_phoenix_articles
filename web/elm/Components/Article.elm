@@ -1,4 +1,4 @@
-module Article exposing (view, Model)
+module Components.Article exposing (view, Model)
 
 import Html exposing (Html, span, strong, em, a, text)
 import Html.Attributes exposing (class, href)

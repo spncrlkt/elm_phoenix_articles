@@ -1,7 +1,7 @@
 module Components.ArticleList exposing (..)
 
-import Html exposing (Html, text, ul, li, div, h2, button)
-import Html.Attributes exposing (class)
+import Html exposing (Html, a, text, ul, li, div, h2, button)
+import Html.Attributes exposing (class, href)
 import Html.Events exposing (onClick)
 import Http
 import Task
@@ -9,7 +9,7 @@ import Json.Decode as Json exposing ((:=))
 
 
 import List
-import Article
+import Components.Article as Article
 
 -- MODEL 
 
@@ -111,11 +111,11 @@ view model =
     , ul [] (viewArticles model)
     ]
 
-viewArticles : Model -> List (Html a)
+viewArticles : Model -> List (Html Msg)
 viewArticles model =
   List.map viewArticle model.articles
 
-viewArticle : Article.Model -> Html a
+viewArticle : Article.Model -> Html Msg
 viewArticle article =
   li [] [ Article.view article, articleLink article ]
 

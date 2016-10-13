@@ -6,6 +6,8 @@ import Html.Attributes exposing (class, href)
 import Html.Events exposing (onClick)
 
 import Components.ArticleList as ArticleList
+import Components.ArticleShow as ArticleShow
+import Components.Article as Article
 
 -- MAIN
 main : Program Never
@@ -27,6 +29,7 @@ type alias Model =
 type Page
   = RootView
   | ArticleListView
+  | ArticleShowView Article.Model
 
 
 initModel : Model
@@ -44,15 +47,23 @@ init =
 type Msg
   = ArticleListMsg ArticleList.Msg
   | UpdateView Page
+  | ArticleShowMsg ArticleShow.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     ArticleListMsg articleMsg ->
-      let (updatedModel, cmd) =
-        ArticleList.update articleMsg model.articleListModel
-      in
-        ( { model | articleListModel = updatedModel }, Cmd.map ArticleListMsg cmd)
+      case articleMsg of
+        ArticleList.RouteToNewPage page ->
+          case page of
+            ArticleList.ShowView article ->
+              ({ model | currentView = (ArticleShowView article) }, Cmd.none)
+            _ ->
+              (model, Cmd.none)
+        _ ->
+          let (updatedModel, cmd) = ArticleList.update articleMsg model.articleListModel
+          in ( { model | articleListModel = updatedModel }, Cmd.map ArticleListMsg cmd )
+
 
     UpdateView page ->
       let
@@ -64,6 +75,9 @@ update msg model =
 
           _ ->
             (newModel, Cmd.none )
+
+    ArticleShowMsg articleMsg ->
+      (model, Cmd.none )
 
 
 -- VIEW
@@ -97,6 +111,9 @@ pageView model =
     ArticleListView ->
       articleListView model
 
+    ArticleShowView article ->
+      articleShowView article
+
 welcomeView : Html Msg
 welcomeView =
   h2 [] [ text "Welcome to Elm Articles" ]
@@ -104,6 +121,10 @@ welcomeView =
 articleListView : Model -> Html Msg
 articleListView model =
   App.map ArticleListMsg (ArticleList.view model.articleListModel)
+
+articleShowView : Article.Model -> Html Msg
+articleShowView article =
+  App.map ArticleShowMsg (ArticleShow.view article)
 
 -- SUBSRCRIPTIONS
 subscriptions : Model -> Sub Msg
